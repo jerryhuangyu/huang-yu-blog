@@ -1,0 +1,106 @@
+---
+title: Stop Using Enums in TypeScript
+date: "2025-01-31"
+tags: ["typescript"]
+draft: false
+summary: Enums in TypeScript are less efficient than object literals with as const, offering better type safety, smaller code, and simpler imports.
+---
+
+Enums have been a staple in TypeScript for quite some time, but they come with certain limitations and quirks. In fact, the TypeScript team now advises against using enums in many scenarios (as highlighted in the [Typescript Handbook - Enums](https://www.typescriptlang.org/docs/handbook/enums.html#objects-vs-enums)). Instead, modern TypeScript developers often prefer using objects with the `as const` assertion, which provides a more flexible and type-safe alternative.
+
+## Limited Type Safety
+
+Enums(Numeric Enums) can be assigned values outside their defined set, potentially leading to unexpected behavior. This behavior existed in TypeScript version [4.9.5](https://www.typescriptlang.org/play/?ts=4.9.5#code/KYOwrgtgBASg9gG2AZygbwFBSgQQCYQCWIANFlAOoBOhALsFWdjMAIZ4MYC+GGHAxglZVgUAGZgQ-WoTggoAC1bIc-fimQAKKomAAuWLuQBKAwDc4hPAG5eSlWo2aAjAAZjtjKEhQAIoRFpWXlMbABVAAcmPzgAd1JyABlgMVpomEIAcwU07l5+OWRaKDwAg39AmTkoAF4oAFZrIA) but was fixed in [5.0.4](https://www.typescriptlang.org/play/?ts=5.0.4#code/KYOwrgtgBASg9gG2AZygbwFBSgQQCYQCWIANFlAOoBOhALsFWdjMAIZ4MYC+GGHAxglZVgUAGZgQ-WoTggoAC1bIc-fimQAKKomAAuWLuQBKAwDc4hPAG5eSlWo2aAjAAZjtjKEhQAIoRFpWXlMbABVAAcmPzgAd1JyABlgMVpomEIAcwU07l5+OWRaKDwAg39AmTkoAF4oAFZrIA).
+
+```tsx
+enum Direction {
+  Up,
+  Down,
+  Left,
+  Right,
+}
+
+// This is valid in TypeScript 4.9.5 😱
+const dir: Direction = 5;
+```
+
+## Generated Code Bloat
+
+Enums generate additional code during compilation, which can increase the size of the final JavaScript bundle.
+
+```typescript
+enum Roles {
+  Admin,
+  Writer,
+  Reader,
+}
+```
+
+This enum compiles to:
+
+```typescript
+var Roles;
+(function (Roles) {
+  Roles[(Roles["Admin"] = 0)] = "Admin";
+  Roles[(Roles["Writer"] = 1)] = "Writer";
+  Roles[(Roles["Reader"] = 2)] = "Reader";
+})(Roles || (Roles = {}));
+```
+
+This additional code increases the size of your JavaScript output unnecessarily.
+
+## Increased Import Complexity
+
+Using enums across multiple modules requires importing the enum in each module where it's used. This can lead to increased complexity and potential maintenance challenges, especially in large codebases.
+
+```typescript
+enum Roles {
+  Admin = "admin",
+  Writer = "writer",
+  Reader = "reader",
+}
+
+const myRole: Roles = Roles.Admin; // Valid
+const yourRole: Roles = "admin"; // Invalid
+```
+
+## Better Alternative - Object Literals with `as const`
+
+Instead of enums, use object literals with `as const` to achieve similar functionality with better type safety and minimal code bloat.
+
+```typescript
+const Roles = {
+  Admin: "Admin",
+  Writer: "Writer",
+  Reader: "Reader",
+} as const;
+
+type Role = (typeof Roles)[keyof typeof Roles];
+
+const myRole: Role = Roles.Admin;
+const youRole: Role = "Admin";
+```
+
+This compiles to:
+
+```typescript
+const Roles = {
+  Admin: "Admin",
+  Writer: "Writer",
+  Reader: "Reader",
+};
+const myRole = Roles.Admin;
+const youRole = "Admin";
+```
+
+Using object literals with `as const` provides the same benefits as enums without the drawbacks, making them a better choice for most TypeScript projects.
+
+## References
+
+[Typescript Handbook - Enums](https://www.typescriptlang.org/docs/handbook/enums.html#objects-vs-enums)  
+[Dont’s use ENUMS in Typescript, they are very dangerous - Ivanzaldivar](https://medium.com/%40ivanzaldivar16/donts-use-enums-in-typescript-they-are-very-dangerous-e0d310ed8430)  
+[Why You Should Avoid Using Enums in TypeScript - Web Dev Tutor](https://www.webdevtutor.net/blog/typescript-dont-use-enums)  
+[Say Goodbye to Enums in TypeScript - Abdulwahab S.](https://medium.com/%40abwhb/say-goodbye-to-enums-in-typescript-ff9eb32d252b)  
+[Avoid using enums in Typescript - Niraj Chauhan](https://www.niraj.life/blog/avoid-using-enums-in-typescript/)  
+[Don’t Use Typescript Enums - Vector Linux](https://vectorlinux.com/dont-use-typescript-enums/)  
+[Typescript Playground - Easy work with subset of enum](https://www.typescriptlang.org/play/?pretty=true&ts=4.9.5&ssl=11&ssc=2&pln=1&pc=1#code/KYOwrgtgBAouEEEQEsIEMA2UDeAoKUAIgPYDmUAvFAEQAmZ1ANPlAMJoAulNAxp0ywAyyYiG7UMIkAIIAVZKWAAncRwXKBAX1y5QkWPAAKwLngIlyVOg2YF2XK3w5adPUQGcueiMY4AuA0hfbjggkwA6ewBuXDcQTyhvJFRMANDEFHQsKm9fGNiPLmSs924zIjIA61IZNk4qp1rhUSrJUVr5RSUqtS6tKDRSuM984a5fUqpyiyr6Gts6-15+Zk0BocL8jgBPAAdgKGLMbgAKHf3iADNDzMx3AEoAbQBrYG2rqHPgD6OMdwBdGJfKDBKhnPbfa4TJ6vd7XL4fCaA1yFKD7JagkEmdyRTgxMYDW4YAK-bjomJAA)
