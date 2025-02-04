@@ -1,6 +1,6 @@
 ---
 title: Stop Using Enums in TypeScript
-date: "2025-01-31"
+date: "2025-02-05"
 tags: ["typescript"]
 draft: false
 summary: Enums in TypeScript are less efficient than object literals with as const, offering better type safety, smaller code, and simpler imports.
@@ -26,7 +26,7 @@ const dir: Direction = 5;
 
 ## Generated Code Bloat
 
-Enums generate additional code during compilation, which can increase the size of the final JavaScript bundle.
+Non-const enums in TypeScript do not fit the concept of being “a typed superset of JavaScript”. They break this principle by generating additional runtime objects, which introduce bidirectional mappings between enum keys and values. leading to larger JavaScript bundle sizes.
 
 ```typescript
 enum Roles {
@@ -104,3 +104,4 @@ Using object literals with `as const` provides the same benefits as enums withou
 [Avoid using enums in Typescript - Niraj Chauhan](https://www.niraj.life/blog/avoid-using-enums-in-typescript/)  
 [Don’t Use Typescript Enums - Vector Linux](https://vectorlinux.com/dont-use-typescript-enums/)  
 [Typescript Playground - Easy work with subset of enum](https://www.typescriptlang.org/play/?pretty=true&ts=4.9.5&ssl=11&ssc=2&pln=1&pc=1#code/KYOwrgtgBAouEEEQEsIEMA2UDeAoKUAIgPYDmUAvFAEQAmZ1ANPlAMJoAulNAxp0ywAyyYiG7UMIkAIIAVZKWAAncRwXKBAX1y5QkWPAAKwLngIlyVOg2YF2XK3w5adPUQGcueiMY4AuA0hfbjggkwA6ewBuXDcQTyhvJFRMANDEFHQsKm9fGNiPLmSs924zIjIA61IZNk4qp1rhUSrJUVr5RSUqtS6tKDRSuM984a5fUqpyiyr6Gts6-15+Zk0BocL8jgBPAAdgKGLMbgAKHf3iADNDzMx3AEoAbQBrYG2rqHPgD6OMdwBdGJfKDBKhnPbfa4TJ6vd7XL4fCaA1yFKD7JagkEmdyRTgxMYDW4YAK-bjomJAA)
+[Typescript has unions, so are enums redundant? - Stack Overflow](https://stackoverflow.com/a/60041791/19001748)
