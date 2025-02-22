@@ -1,0 +1,132 @@
+---
+title: "Node.js and TypeScript: From Type Annotations to Native Execution"
+date: "2025-02-22"
+tags: ["nodejs", "typescript"]
+draft: false
+summary: Node.js has introduced experimental flags to allow direct execution of TypeScript files without manual compilation.
+---
+
+⚠️WARNING⚠️: 本文內容涉及 Node.js 的實驗性功能。
+
+TypeScript 是 JavaScript 的超集，主要目的是提供靜態型別檢查，提升開發效率與代碼可維護性。理想狀況下，它僅作為 JavaScript 的型別安全增強工具，但部分 TypeScript 特性在編譯後會產生額外的 JavaScript 代碼，使其不僅僅是純粹的型別擴展。
+
+## TypeScript 的核心理念與影響
+
+- **靜態型別檢查：**
+    
+    為 JavaScript 增加型別安全，幫助在編譯階段捕獲錯誤，提高代碼質量。
+    
+- **編譯後的影響：**
+    
+    雖然大部分型別標註在編譯過程中會被移除，但部分語法（如 `enum`、`decorators`、`namespace`）在最終生成的 JavaScript 中仍會保留對應代碼，影響執行結果。
+
+## Node.js 對 TypeScript 的支持
+
+為了改善開發體驗，Node.js 在最近的版本中引入了多項實驗性標誌，使得直接運行帶有 TypeScript 語法的文件成為可能。
+
+| Node.js Version | Flag                               | Features                                           |
+|-----------------|------------------------------------|----------------------------------------------------|
+| 22.6.0+         | `--experimental-strip-types`       | Inline type annotations                            |
+| 22.7.0+         | `--experimental-transform-types`   | Support TS syntax like enums, namespaces           |
+| 23.0.0+         | `--no-experimental-strip-types`    | Type stripping enabled by default                  |
+
+### Node.js 22.6.0+
+
+自 Node.js 22.6.0 起，引入標誌 `--experimental-strip-types` 允許直接執行包含型別標註的 `.ts` 文件，省略手動轉譯步驟。
+
+範例：
+
+```tsx
+// example.ts
+function greet(name: string): void {
+    console.log(`Hello, ${name}!`);
+}
+
+greet("TypeScript");
+```
+
+執行命令：
+
+```bash
+node --experimental-strip-types example.ts
+```
+
+限制條件：
+
+- 僅支援內嵌型別標註（inline type annotations）
+- 不支援如 `enum`、`namespace` 等進階 TypeScript 語法
+- `import` 和 `require` 語句必須明確指定檔案副檔名（例如 `.js` 或 `.ts`）
+- 使用 `type` 關鍵字進行型別導入以避免執行時錯誤
+- 預設情況下，不會對 `node_modules` 中的 TypeScript 代碼進行型別移除
+
+此功能雖然大幅提升開發便利性，卻因其支援範圍有限而存在一定限制。
+
+### Node.js 22.7.0+
+
+在 Node.js 22.7.0 版本中，為進一步支持 TypeScript 語法，推出了標誌 `--experimental-transform-types`，可以處理包含 `enum`、`namespace` 等 TypeScript 專屬語法的代碼。
+
+範例：
+
+```tsx
+// example.ts
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+console.log(Color.Red);
+```
+
+執行命令：
+
+```bash
+node --experimental-transform-types example.ts
+```
+
+注意事項：
+
+啟用該標誌時，會自動啟用 `--experimental-strip-types`，因此無需同時使用兩者。
+
+### Node.js 23.0.0+
+
+從 Node.js 23.0.0 版本開始，`--experimental-strip-types` 標誌預設已啟用，因此可直接運行 `.ts` 文件而無需額外參數。
+
+直接運行：
+
+```bash
+node example.ts
+```
+
+若需禁用此功能：
+
+```bash
+node --no-experimental-strip-types example.ts
+```
+
+補充說明：
+
+若代碼中包含 `enum` 或其他高級 TypeScript 特性，仍需啟用 `--experimental-transform-types`。
+
+## 直接運行 TypeScript 的 Runtime
+
+除了 Node.js，目前還有其他 JavaScript Runtime 原生支持 TypeScript：
+
+- **Deno：**
+    
+    由 Node.js 創始人 Ryan Dahl 開發，內建 TypeScript 支持，無需額外轉譯步驟。
+    
+- **Bun：**
+    
+    新興的 JavaScript Runtime，以極致性能與卓越開發體驗聞名，同樣原生支持 TypeScript。
+    
+
+## Node.js 的未來發展
+
+> Future versions of Node.js will include support for TypeScript without the need for a command line flag. —[Running TypeScript Natively](https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively)
+
+未來的 Node.js 版本將進一步增強對 TypeScript 的原生支持，期望能在不需要任何額外命令行標誌的情況下，完全支持所有 TypeScript 語法。這將使開發者能夠更加無縫地開發與部署 TypeScript 應用，進一步簡化開發流程。
+
+## 參考資料
+
+https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
+https://nodejs.org/en/blog/release/v22.6.0#2024-08-06-version-2260-current-rafaelgss
