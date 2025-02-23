@@ -1,6 +1,6 @@
 ---
 title: "Node.js and TypeScript: From Type Annotations to Native Execution"
-date: "2025-02-22"
+date: "2025-02-23"
 tags: ["nodejs", "typescript"]
 draft: false
 summary: Node.js has introduced experimental flags to allow direct execution of TypeScript files without manual compilation.
@@ -28,7 +28,7 @@ TypeScript 是 JavaScript 的超集，主要目的是提供靜態型別檢查，
 |-----------------|------------------------------------|----------------------------------------------------|
 | 22.6.0+         | `--experimental-strip-types`       | Inline type annotations                            |
 | 22.7.0+         | `--experimental-transform-types`   | Support TS syntax like enums, namespaces           |
-| 23.0.0+         | `--no-experimental-strip-types`    | Type stripping enabled by default                  |
+| 23.6.0+         | `--no-experimental-strip-types`    | Type stripping enabled by default                  |
 
 ### Node.js 22.6.0+
 
@@ -87,9 +87,9 @@ node --experimental-transform-types example.ts
 
 啟用該標誌時，會自動啟用 `--experimental-strip-types`，因此無需同時使用兩者。
 
-### Node.js 23.0.0+
+### Node.js 23.6.0+
 
-從 Node.js 23.0.0 版本開始，`--experimental-strip-types` 標誌預設已啟用，因此可直接運行 `.ts` 文件而無需額外參數。
+從 Node.js 23.6.0 版本開始，`--experimental-strip-types` 標誌預設已啟用，因此可直接運行 `.ts` 文件而無需額外參數。
 
 直接運行：
 
@@ -106,6 +106,14 @@ node --no-experimental-strip-types example.ts
 補充說明：
 
 若代碼中包含 `enum` 或其他高級 TypeScript 特性，仍需啟用 `--experimental-transform-types`。
+
+### Typescript 5.8
+
+為了支援 Node.js 23.6 取消 `--experimental-strip-types` 的實驗性標誌並正式支持此功能。該功能要求 TypeScript 的語法必須不具有運行時語義，換句話說，這些語法必須能夠輕鬆地被刪除或“剝除”，最終留下的是有效的 JavaScript 代碼。
+
+類似的工具，如 [ts-blank-space](https://github.com/bloomberg/ts-blank-space) 或 [Amaro](https://github.com/nodejs/amaro)（Node.js 中用於型別移除的底層庫）在處理無法剝除的代碼時會提供錯誤提示，但這樣的工具無法在執行前確保代碼能夠順利運行，造成了開發過程中的不確定性。
+
+為了解決這個問題，TypeScript 5.8 引入了 `--erasableSyntaxOnly` 標誌。啟用此標誌後，TypeScript 會在編譯階段對代碼進行檢查，確保代碼中只包含那些不具有運行時語義的語法（即「可剝除」語法）。這樣的改進與 Node.js type stripping 的功能結合，使得開發者可以在不轉譯的情況下，直接運行 TypeScript 代碼，提升開發效率。
 
 ## 直接運行 TypeScript 的 Runtime
 
@@ -130,3 +138,4 @@ node --no-experimental-strip-types example.ts
 
 https://nodejs.org/en/learn/typescript/run-natively#running-typescript-natively
 https://nodejs.org/en/blog/release/v22.6.0#2024-08-06-version-2260-current-rafaelgss
+https://devblogs.microsoft.com/typescript/announcing-typescript-5-8-beta/#the---erasablesyntaxonly-option

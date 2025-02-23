@@ -1,6 +1,6 @@
 {
-  "nodejs": 1,
-  "typescript": 3,
   "react": 2,
+  "typescript": 3,
+  "nodejs": 1,
   "infra": 2
 }
