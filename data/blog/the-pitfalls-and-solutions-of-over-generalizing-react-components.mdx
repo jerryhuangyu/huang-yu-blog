@@ -1,0 +1,202 @@
+---
+title: "The Pitfalls and Solutions of Over-Generalizing React Components"
+date: "2025-02-23"
+tags: ["react", "typescript"]
+draft: false
+summary: Over-generalizing React components can lead to complexity and maintainability issues, so it's better to keep components focused and use composition for flexibility.
+---
+
+在開發 React 應用時，組件的可重用性是一個重要的考量。然而許多開發者在追求組件通用性的過程中，容易陷入過度泛化（Over-Generalizing）的陷阱，導致組件變得複雜且難以維護。在本文中，我們將探討過度泛化的常見警訊（red flags），並提供一些改進建議。
+
+## 過度泛化的警訊（Red Flags）
+
+### 1. 過多的邏輯分支
+
+當組件試圖處理多種情境時，往往會透過 `if-else` 或 `switch` 來處理不同類型的數據和渲染邏輯，這會使得代碼複雜且難以擴展。例如：
+
+```tsx
+const GenericCard = ({ type, title, description, price, rating, author, publishDate, isFeatured }) => {
+  const renderContent = () => {
+    switch(type) {
+      case 'product':
+        return (
+          <>
+            <h3>{title}</h3>
+            <p>{description}</p>
+            <div>${price}</div>
+            {rating && <div>Rating: {rating}/5</div>}
+          </>
+        );
+      
+      case 'book':
+        return (
+          <>
+            <h3>{title}</h3>
+            <div>By {author}</div>
+            <p>{description}</p>
+            <div>Published: {publishDate}</div>
+          </>
+        );
+        
+      default:
+        return (
+          <>
+            <h3>{title}</h3>
+            <p>{description}</p>
+          </>
+        );
+    }
+  };
+
+  return (
+    <div className={`card ${isFeatured ? 'featured' : ''}`}>
+      {renderContent()}
+    </div>
+  );
+};
+```
+
+這樣的寫法雖然看似通用，但隨著新類型的增加都需修改原組件，條件判斷會導致邏輯複雜度急遽上升，增加維護成本，亦違反開閉原則（Open-Closed Principle, OCP）。更好的做法是使用組合模式（Composition）來避免過多的條件判斷，保持組件的簡單與可擴展性。
+
+```tsx
+// Base component for shared structure
+const BaseCard = ({ className, children }) => (
+  <div className={`card ${className}`}>{children}</div>
+);
+
+// components
+const ProductCard = ({ title, image, description, price, rating, isFeatured }) => (
+  <BaseCard className={isFeatured ? 'featured' : ''}>
+    <h3>{title}</h3>
+    <p>{description}</p>
+    <div>${price}</div>
+    {rating && <div>Rating: {rating}/5</div>}
+  </BaseCard>
+);
+
+const BookCard = ({ title, image, author, description, publishDate, isFeatured }) => (
+  <BaseCard className={isFeatured ? 'featured' : ''}>
+    <h3>{title}</h3>
+    <div>By {author}</div>
+    <p>{description}</p>
+    <div>Published: {publishDate}</div>
+  </BaseCard>
+);
+
+const DefaultCard = ({ title, description, isFeatured }) => (
+  <BaseCard className={isFeatured ? 'featured' : ''}>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </BaseCard>
+);
+```
+
+這樣的改寫避免了 `switch` 代碼，讓每個卡片類型都能夠專注於自己需要渲染的內容，組件結構也更易於維護與擴展。
+
+### 2. 過度複雜的 Props 結構
+
+在設計出過度泛化的組件時，結構可能會降低 `props` 的可讀性，並削弱其型別安全性，進而影響開發效率。例如以下的 `ButtonProps`：
+
+```tsx
+interface ButtonProps {
+  variant: 'primary' | 'secondary' | 'icon';
+  label?: string;  // 如何確保 'primary' 和 'secondary' 變體時為必填？
+  icon?: React.ReactNode; // 如何確保 'icon' 變體時為必填？
+  onClick: () => void;
+}
+```
+
+這樣的設計使 `label` 和 `icon` 的約束變得模糊，導致開發者可能傳入不符合變體規則的 `props`。為了提升型別安全性，雖然可以使用 TypeScript 的函數多載 (Function Overloads) 來明確定義不同 `variant` 對應的 `props`，但仍然讓 API 設計變得複雜，影響開發體驗。最佳做法是拆分成更小的組件，而非強行讓單一組件適應所有變體。
+
+```tsx
+type LabelButtonProps = {
+  label: string;
+  onClick: () => void;
+};
+
+type IconButtonProps = {
+  icon: React.ReactNode;
+  onClick: () => void;
+};
+```
+
+這樣的設計讓 API 更清晰，開發者無需關心 `variant`，直接選擇 `LabelButton` 或 `IconButton`。不僅提高型別安全性，減少 `props` 組合錯誤的可能性。同時避免在組件內部處理 `variant`，降低運行時不必要的條件判斷，提升可維護性與效能。
+
+### 3. 單一組件承擔過多職責
+
+當組件負責處理多種行為或業務邏輯時，會使得代碼變得臃腫且難以維護。例如，一個通用的表單組件 `UniversalForm`：
+
+```tsx
+const UniversalForm = ({ type }) => {
+  const initialData = {
+    login: { username: "", password: "" },
+    signup: { username: "", email: "", password: "" },
+    contact: { name: "", email: "", message: "" },
+  }[type] || {};
+
+  const [formData, setFormData] = useState(initialData);
+
+  const handleChange = useCallback((e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }, []);
+  
+  const onSubmit = (formData, type) => {
+	  if (type === 'login') {...}
+	  if (type === 'signup') {...}
+	  if (type === 'contact') {...}
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData, type);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {type === "login" && (
+        <>
+          <input type="text" name="username" placeholder="Username" onChange={handleChange} value={formData.username} />
+          <input type="password" name="password" placeholder="Password" onChange={handleChange} value={formData.password} />
+        </>
+      )}
+      {type === "signup" && (
+        <>
+          <input type="text" name="username" placeholder="Username" onChange={handleChange} value={formData.username} />
+          <input type="email" name="email" placeholder="Email" onChange={handleChange} value={formData.email} />
+          <input type="password" name="password" placeholder="Password" onChange={handleChange} value={formData.password} />
+        </>
+      )}
+      {type === "contact" && (
+        <>
+          <input type="text" name="name" placeholder="Name" onChange={handleChange} value={formData.name} />
+          <input type="email" name="email" placeholder="Email" onChange={handleChange} value={formData.email} />
+          <textarea name="message" placeholder="Your message" onChange={handleChange} value={formData.message} />
+        </>
+      )}
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+這個組件負擔了過多的邏輯，包括不同表單類型的處理、表單數據的初始化及提交處理。這種設計雖然通用，但隨著需求的擴展，會變得越來越難以維護。將其拆分為獨立的組件，以遵守單一職責原則（Single Responsibility Principle）。
+
+具體來說，將 `UniversalForm` 拆分為 `LoginForm`、`SignupForm` 和 `ContactForm` 等專門處理特定表單邏輯的組件。使得每個表單只需要關注與自身相關的邏輯，組件的職責更加清晰，避免單一組件負擔過多邏輯。雖然這樣會導致代碼重複，但在實際開發中這是可以接受的，因為每個表單的業務邏輯被集中並專注於單一職責，這樣的結構更加便於擴展、調整，並且不會影響其他表單的處理。
+
+---
+
+## 結論
+
+過度泛化可能會讓 React 組件在初期看起來更具重用性，但從長遠來看，這會導致維護成本上升、代碼複雜度增加，甚至可能引入錯誤。最佳的做法是保持組件簡潔、專注於單一責任，並利用組合來實現靈活性。這樣的設計不僅能提高代碼質量，還能提升開發和維護的效率。
+
+當你在設計 React 組件時，請問自己：
+
+- **這個組件是否過度處理多種情境？**
+- **是否可以拆分成更小的、單一職責的組件？**
+- **是否可以透過組合方式來取代條件判斷？**
+
+遵循這些原則，將有助於你開發出更高效、更易維護的 React 應用。
+
+## 參考資料
+
+https://www.youtube.com/watch?v=jqcbIgQBn34
